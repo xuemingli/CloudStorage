@@ -1,0 +1,40 @@
+POST http://localhost:8080/file/update?op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=test2.txt&op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=mytest.txt&op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=mytest.txt
+Accept: */*
+Cache-Control: no-cache
+
+<> 2019-12-04T061338-1.200.txt
+
+###
+
+POST http://localhost:8080/file/update?op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=test2.txt&op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=mytest.txt&op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=mytest.txt
+Accept: */*
+Cache-Control: no-cache
+
+<> 2019-12-04T061338.200.txt
+
+###
+
+POST http://localhost:8080/file/update?op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=test2.txt&op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=mytest.txt&op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=mytest.txt
+Accept: */*
+Cache-Control: no-cache
+
+<> 2019-12-04T061322.200.txt
+
+###
+
+POST http://localhost:8080/file/update?op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=test2.txt&op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=mytest.txt
+Accept: */*
+Cache-Control: no-cache
+
+<> 2019-12-04T061149.200.txt
+
+###
+
+POST http://localhost:8080/file/update?op=0&filehash=9054fbe0b622c638224d50d20824d2ff6782e308&filename=test2.txt
+Accept: */*
+Cache-Control: no-cache
+
+<> 2019-12-04T061051.200.txt
+
+###
+
