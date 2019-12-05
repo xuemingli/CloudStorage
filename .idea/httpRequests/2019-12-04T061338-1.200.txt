@@ -1,1 +1,0 @@
-{"FileSha1":"9054fbe0b622c638224d50d20824d2ff6782e308","FileName":"test2.txt","FileSize":6,"Location":"/tmp/test2.txt","UploadAt":"2019-12-04 18:08:54"}
