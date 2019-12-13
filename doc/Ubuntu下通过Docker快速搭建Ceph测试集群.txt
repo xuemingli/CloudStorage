@@ -1,0 +1,64 @@
+	通过docker可以快速部署小规模Ceph集群的流程，可用于开发测试。
+
+1.关于镜像， 这里需要用到三个: ceph/mon, ceph/osd, ceph/radosgw
+	如果下载不了的话，可以尝试下载我打包的: moxiaomomo/ceph-mon, moxiaomomo/ceph-osd, moxiaomomo/ceph-radosgw
+	下载完之后，可以重命名成官方镜像名，比如: docker tag moxiaomomo/ceph-mon:latest ceph/mon:latest
+	
+	$sudo docker pull moxiaomomo/ceph-mon:latest
+	$sudo docker tag moxiaomomo/ceph-mon:latest ceph/mon:latest
+	
+	$sudo docker pull moxiaomomo/ceph-osd:latest
+	$sudo docker tag moxiaomomo/ceph-osd:latest ceph-osd:latest
+	
+	$sudo docker pull moxiaomomo/ceph-radosgw:latest
+	$sudo docker tag moxiaomomo/ceph-radosgw:latest ceph/radosgw:latest
+	
+2.重启docker
+$systemctl restart docker
+
+3.创建Ceph专用网络(如果之前执行过该步操作，则重启后无需执行，从第4步开始)
+sudo docker network create --driver bridge --subnet 172.20.0.0/16 ceph-network
+sudo docker network inspect ceph-network
+
+4.删除旧的ceph相关容器
+sudo docker rm -f $(docker ps -a | grep ceph | awk '{print $1}')
+
+5.清理旧的ceph相关目录文件，如果有的话
+sudo rm -rf /www/ceph /var/lib/ceph/  /www/osd/
+
+6.创建相关目录及修改权限，用于挂载volume
+sudo mkdir -p /www/ceph /var/lib/ceph/osd /www/osd/
+sudo chown -R 64045:64045 /var/lib/ceph/osd/
+sudo chown -R 64045:64045 /www/osd/
+
+7.创建monitor节点
+sudo docker run -itd --name monnode --network ceph-network --ip 172.20.0.10 -e MON_NAME=monnode -e MON_IP=172.20.0.10 -v /www/ceph:/etc/ceph ceph/mon
+
+8.在monitor节点上标识3个osd节点
+sudo docker exec monnode ceph osd create
+sduo docker exec monnode ceph osd create
+sudo docker exec monnode ceph osd create
+
+9.创建OSD节点
+sudo docker run -itd --name osdnode0 --network ceph-network -e CLUSTER=ceph -e WEIGHT=1.0 -e MON_NAME=monnode -e MON_IP=172.20.0.10 -v /www/ceph:/etc/ceph -v /www/osd/0:/var/lib/ceph/osd/ceph-0 ceph/osd 
+sudo docker run -itd --name osdnode1 --network ceph-network -e CLUSTER=ceph -e WEIGHT=1.0 -e MON_NAME=monnode -e MON_IP=172.20.0.10 -v /www/ceph:/etc/ceph -v /www/osd/1:/var/lib/ceph/osd/ceph-1 ceph/osd
+sudo docker run -itd --name osdnode2 --network ceph-network -e CLUSTER=ceph -e WEIGHT=1.0 -e MON_NAME=monnode -e MON_IP=172.20.0.10 -v /www/ceph:/etc/ceph -v /www/osd/2:/var/lib/ceph/osd/ceph-2 ceph/osd
+
+10.增加monitor节点，组件成集群
+sudo docker run -itd --name monnode_1 --network ceph-network --ip 172.20.0.11 -e MON_NAME=monnode_1 -e MON_IP=172.20.0.11 -v /www/ceph:/etc/ceph ceph/mon
+sudo docker run -itd --name monnode_2 --network ceph-network --ip 172.20.0.12 -e MON_NAME=monnode_2 -e MON_IP=172.20.0.12 -v /www/ceph:/etc/ceph ceph/mon
+
+
+11.创建gateway节点
+sudo docker run -itd --name gwnode --network ceph-network --ip 172.20.0.9 -p 9080:80 -e RGW_NAME=gwnode -v /www/ceph:/etc/ceph ceph/radosgw
+
+12.查看ceph集群状态
+sleep 10 && sudo docker exec monnode ceph -s
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+创建Ceph用户:
+sudo docker exec -it gwnode radosgw-admin user create --uid=user1 --display-name=user1
+
+
+

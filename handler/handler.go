@@ -8,10 +8,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
+	cmn "CloudStorage/common"
+	cfg "CloudStorage/config"
 	dblayer "CloudStorage/db"
 	"CloudStorage/meta"
+	"CloudStorage/store/ceph"
 	"CloudStorage/util"
 )
 
@@ -36,7 +40,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		fileMeta := meta.FileMeta{
 			FileName: head.Filename,
-			Location: "/tmp/" + head.Filename,
+			Location: cfg.TempLocalRootDir + head.Filename,
 			UploadAt: time.Now().Format("2006-01-02 15:04:05"),
 		}
 
@@ -55,6 +59,17 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		newFile.Seek(0, 0)
 		fileMeta.FileSha1 = util.FileSha1(newFile)
+
+		// 5. 同步或异步将文件转移到Ceph/OSS
+		newFile.Seek(0, 0) // 游标重新回到文件头部
+		if cfg.CurrentStoreType == cmn.StoreCeph {
+			// 文件写入Ceph存储
+			data, _ := ioutil.ReadAll(newFile)
+			cephPath := "/ceph/" + fileMeta.FileSha1
+			_ = ceph.PutObject("userfile", cephPath, data)
+			fileMeta.Location = cephPath
+		}
+
 		// TODO: 处理异常情况，比如跳转到一个上传失败页面
 		_ = meta.UpdateFileMetaDB(fileMeta)
 
@@ -112,6 +127,50 @@ func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(data)
+}
+
+// DownloadHandler : 文件下载接口
+func DownloadHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	fsha1 := r.Form.Get("filehash")
+	username := r.Form.Get("username")
+
+	fm, _ := meta.GetFileMetaDB(fsha1)
+	userFile, err := dblayer.QueryUserFileMeta(username, fsha1)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var fileData []byte
+	if strings.HasPrefix(fm.Location, cfg.TempLocalRootDir) {
+		f, err := os.Open(fm.Location)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+
+		fileData, err = ioutil.ReadAll(f)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	} else if strings.HasPrefix(fm.Location, "/ceph") {
+		fmt.Println("to download file from ceph...")
+		bucket := ceph.GetCephBucket("userfile")
+		fileData, err = bucket.Get(fm.Location)
+		if err != nil {
+			fmt.Println(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/octect-stream")
+	// attachment表示文件将会提示下载到本地，而不是直接在浏览器中打开
+	w.Header().Set("content-disposition", "attachment; filename=\""+userFile.FileName+"\"")
+	w.Write(fileData)
 }
 
 // FileMetaUpdateHandler ： 更新元信息接口(重命名)
@@ -218,4 +277,15 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(resp.JSONBytes())
 	return
+}
+
+// DownloadURLHandler : 生成文件的下载地址
+func DownloadURLHandler(w http.ResponseWriter, r *http.Request) {
+	filehash := r.Form.Get("filehash")
+	username := r.Form.Get("username")
+	token := r.Form.Get("token")
+	tmpURL := fmt.Sprintf(
+		"http://%s/file/download?filehash=%s&username=%s&token=%s",
+		r.Host, filehash, username, token)
+	w.Write([]byte(tmpURL))
 }

@@ -1,0 +1,13 @@
+1.安装Redis服务
+	$sudo apt-get install redis-server
+	配置文件在/etc/redis/redis.conf
+	
+	Redis服务器默认是不需要密码的，假设设置密码为123456
+	需要去掉配置文件中requirepass 前面的注释#，在后面添加密码
+	requirepass 123456
+	
+	开启Redis的远程连接
+	注释掉绑定地址#bind 127.0.0.1
+	
+	修改Redis的默认端口
+	port 6379
