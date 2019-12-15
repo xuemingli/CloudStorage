@@ -1,0 +1,15 @@
+
+1.创建一个用于保存mq数据的目录
+$sudo mkdir /data/rabbitmq -p
+
+1.安装并启动一个单节点的mq:
+$sudo docker run -d --hostname rabbit-svr --name rabbit -p 5672:5672 -p 15672:15672 -v /data/rabbitmq:/var/lib/rabbitmq rabbitmq:management
+	# 如果Docker中没有mq的镜像，该命令会先下载mq的镜像，然后启动mq
+	# -d 表示以后台方式启动
+	# --hostname rabbit-svr 设置mq主机的名称为rabbit-svr，该名字可以随便取
+	# --name rabbit 设置容器的名称为rabbit
+	# -p 5672:5672 将容器中的端口映射出来，这样在Host主机访问5672的端口就可以访问rabbitmq了，这个端口主要用来让程序访问API接口
+	# -p 15672:15672 这个端口是UI管理用的接口，这样我们可以在浏览器上通过访问localhost:15672来打开mq的管理控制台
+	# -p 25672:25672 这个端口用来mq集群之间的通信，在上面的命令中没有写出来，因为我们只有一个节点
+	# -v /data/rabbitmq:/var/lib/rabbitmq 将mq默认的数据存放路径映射到/data/rabbitmq目录，这样可以做数据的持久化
+	# rabbitmq:management rabbitmq的镜像名

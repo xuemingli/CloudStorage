@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"CloudStorage/mq"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -62,12 +63,39 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		// 5. 同步或异步将文件转移到Ceph/OSS
 		newFile.Seek(0, 0) // 游标重新回到文件头部
+
 		if cfg.CurrentStoreType == cmn.StoreCeph {
 			// 文件写入Ceph存储
-			data, _ := ioutil.ReadAll(newFile)
 			cephPath := "/ceph/" + fileMeta.FileSha1
-			_ = ceph.PutObject("userfile", cephPath, data)
-			fileMeta.Location = cephPath
+			// 判断写入ceph为同步还是异步
+			if !cfg.AsyncTransferEnable {
+				datafile, _ := ioutil.ReadAll(newFile)
+				err = ceph.PutObject("userfile", cephPath, datafile)
+				if err != nil {
+					fmt.Println(err.Error())
+					w.Write([]byte("Upload failed!"))
+					return
+				}
+				fileMeta.Location = cephPath
+			} else {
+				// 写入异步转移任务队列
+				data := mq.TransferData{
+					FileHash:      fileMeta.FileSha1,
+					CurLocation:   fileMeta.Location,
+					DestLocation:  cephPath,
+					DestStoreType: cmn.StoreCeph,
+				}
+				pubData, _ := json.Marshal(data)
+				pubSuc := mq.Publish(
+					cfg.TransExchangeName,
+					cfg.TransCephRoutingKey,
+					pubData,
+				)
+				if !pubSuc {
+					// TODO: 当前发送转移信息失败，稍后重试
+				}
+			}
+
 		}
 
 		// TODO: 处理异常情况，比如跳转到一个上传失败页面
@@ -282,10 +310,21 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request) {
 // DownloadURLHandler : 生成文件的下载地址
 func DownloadURLHandler(w http.ResponseWriter, r *http.Request) {
 	filehash := r.Form.Get("filehash")
-	username := r.Form.Get("username")
-	token := r.Form.Get("token")
-	tmpURL := fmt.Sprintf(
-		"http://%s/file/download?filehash=%s&username=%s&token=%s",
-		r.Host, filehash, username, token)
-	w.Write([]byte(tmpURL))
+	// 从文件表查找记录
+	row, _ := dblayer.GetFileMeta(filehash)
+
+	// TODO: 判断文件存在OSS，还是Ceph，还是在本地
+	if strings.HasPrefix(row.FileAddr.String, "/data") ||
+		strings.HasPrefix(row.FileAddr.String, "/ceph") {
+		username := r.Form.Get("username")
+		token := r.Form.Get("token")
+		tmpUrl := fmt.Sprintf("http://%s/file/download?filehash=%s&username=%s&token=%s",
+			r.Host, filehash, username, token)
+		w.Write([]byte(tmpUrl))
+	} else if strings.HasPrefix(row.FileAddr.String, "oss/") {
+		// oss下载url
+		//signedURL := oss.DownloadURL(row.FileAddr.String)
+		//w.Write([]byte(signedURL))
+	}
+
 }
