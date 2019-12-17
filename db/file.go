@@ -151,13 +151,10 @@ func UpdateFileLocation(filehash string, fileaddr string) bool {
 
 	ret, err := stmt.Exec(fileaddr, filehash)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("123" + err.Error())
 		return false
 	}
-	if rf, err := ret.RowsAffected(); nil == err {
-		if rf <= 0 {
-			fmt.Printf("更新文件location失败, filehash:%s", filehash)
-		}
+	if _, err := ret.RowsAffected(); nil == err {
 		return true
 	}
 	return false

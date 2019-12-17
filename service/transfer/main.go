@@ -18,23 +18,24 @@ func ProcessTransfer(msg []byte) bool {
 	pubData := mq.TransferData{}
 	err := json.Unmarshal(msg, &pubData)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("111 " + err.Error())
 		return false
 	}
 
 	fin, err := os.Open(pubData.CurLocation)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("222 " + err.Error())
 		return false
 	}
 	defer fin.Close()
 	data, _ := ioutil.ReadAll(fin)
+	//fmt.Println(len(data))
 	err = ceph.PutObject(
 		"userfile",
 		pubData.DestLocation,
 		data)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println("333 " + err.Error())
 		return false
 	}
 

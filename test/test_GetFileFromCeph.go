@@ -7,8 +7,8 @@ import (
 
 func main() {
 	bucket := ceph.GetCephBucket("userfile")
-	d, _ := bucket.Get("/ceph/21248974b7c16c75db561b07eb607b1d402ef7c3")
-	tmpFile, _ := os.Create("/tmp/test_file123")
+	d, _ := bucket.Get("/ceph/a3a8f72f07600789e43c320544e5878f7e378e06")
+	tmpFile, _ := os.Create("/tmp/test_file2")
 	tmpFile.Write(d)
 	return
 }

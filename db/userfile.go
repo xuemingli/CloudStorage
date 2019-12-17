@@ -18,17 +18,20 @@ type UserFile struct {
 
 // OnUserFileUploadFinished : 更新用户文件表
 func OnUserFileUploadFinished(username, filehash, filename string, filesize int64) bool {
-	stmt, err := mydb.DBConn().Prepare(
-		"insert ignore into tbl_user_file (`user_name`,`file_sha1`,`file_name`," +
-			"`file_size`,`upload_at`,`status`) values (?,?,?,?,?,1)")
-	if err != nil {
-		return false
-	}
-	defer stmt.Close()
+	ufile, err := QueryUserFileMeta(username, filehash)
+	if err != nil || ufile.FileName != filename {
+		stmt, err := mydb.DBConn().Prepare(
+			"insert ignore into tbl_user_file (`user_name`,`file_sha1`,`file_name`," +
+				"`file_size`,`upload_at`,`status`) values (?,?,?,?,?,1)")
+		if err != nil {
+			return false
+		}
+		defer stmt.Close()
 
-	_, err = stmt.Exec(username, filehash, filename, filesize, time.Now())
-	if err != nil {
-		return false
+		_, err = stmt.Exec(username, filehash, filename, filesize, time.Now())
+		if err != nil {
+			return false
+		}
 	}
 	return true
 }

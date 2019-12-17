@@ -48,10 +48,10 @@ func RemoveFileMeta(fileSha1 string) {
 }
 
 // GetFileMetaDB : 从mysql获取文件元信息
-func GetFileMetaDB(fileSha1 string) (FileMeta, error) {
+func GetFileMetaDB(fileSha1 string) (*FileMeta, error) {
 	tfile, err := mydb.GetFileMeta(fileSha1)
 	if err != nil {
-		return FileMeta{}, err
+		return nil, err
 	}
 	fmeta := FileMeta{
 		FileSha1: tfile.FileHash,
@@ -59,7 +59,7 @@ func GetFileMetaDB(fileSha1 string) (FileMeta, error) {
 		FileSize: tfile.FileSize.Int64,
 		Location: tfile.FileAddr.String,
 	}
-	return fmeta, nil
+	return &fmeta, nil
 }
 
 // GetLastFileMetasDB : 批量从mysql获取文件元信息
