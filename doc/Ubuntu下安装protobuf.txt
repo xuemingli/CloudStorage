@@ -1,0 +1,51 @@
+1.安装以下依赖工具：
+$ sudo apt-get install autoconf automake libtool curl make g++ unzip
+
+2.安装go插件：
+go get github.com/golang/protobuf/protoc-gen-go
+go get github.com/micro/protoc-gen-micro
+
+3.安装protobuf：
+	>>>获取源代码：
+		$ git clone https://github.com/protocolbuffers/protobuf.git
+		$ cd protobuf
+		$ git submodule update --init --recursive
+		$  ./autogen.sh
+
+	>>>开始编译源代码：
+		$  ./configure
+		$ make
+		$ make check
+
+	>>>安装protobuf：
+		$ sudo make install
+		$ sudo ldconfig
+
+	>>>检验protobuf安装是否成功：
+		$ protoc -h
+
+	>>>查看protobuf的版本：
+		$ protoc --version
+		
+4.生成go语言版本的proto文件
+	$ protoc --proto_path=service/account/proto --go_out=service/account/proto --micro_out=service/account/proto service/account/proto/user.proto
+	# 如果提示“--go_out: protoc-gen-go: Plugin failed with status code 1.”或“--micro_out: protoc-gen-micro: Plugin failed with status code 1.”说明生成失败
+	# 解决办法：
+		先到GOPATH目录下的bin目录中查看是否有protoc-gen-go和protoc-gen-micro文件，如果没有说明第2步没有执行或执行失败，如果执行失败用下面的方法安装：
+			通过git clone去下载，然后放到$GOPATH/src对应的目录中。
+			git clone https://github.com/golang/protobuf.git
+			
+			编译，获得可执行文件：
+			$ cd $GOPATH/src/github.com/golang/protobuf/protoc-gen-go/
+			$ go build
+			
+			将可执行文件移动到$GOPATH/bin目录下（手动完成的）
+			
+		如果GOPATH目录下的bin目录中有protoc-gen-go和protoc-gen-micro文件，则用下面的方法：
+			$ protoc \
+			--plugin=protoc-gen-go=${GOPATH}/bin/protoc-gen-go \
+			--plugin=protoc-gen-micro=${GOPATH}/bin/protoc-gen-micro \
+			--proto_path=service/account/proto \
+			--go_out=service/account/proto \
+			--micro_out=service/account/proto \
+			service/account/proto/user.proto
