@@ -1,5 +1,5 @@
 # CloudStorage
->>基于golang实现的一种分布式云存储服务
+>>基于go语言实现的一种分布式云存储服务。
 ## 环境
 * Linux:
 ```Bash
@@ -41,6 +41,11 @@ Server: Docker Engine - Community
  docker-init:
   Version:          0.18.0
   GitCommit:        fec3683
+```
+* mysql
+```Bash
+lxm@lxm:~$ sudo docker images | grep mysql
+mysql                                                                            5.7                 1e4405fe1ea9        4 months ago        437MB
 ```
 * Redis
 ```Bash
